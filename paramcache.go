@@ -25,8 +25,20 @@ var (
 	useSSMCache    string           = "true" //override via environment var USE_SSM_CACHE
 	parameterStore                  = make(map[string]SSMParameterStoreCache)
 	cacheTimeout   int64            = cacheDefaultTimeout //override via environment var SSM_CACHE_TIMEOUT
-	Sess           *session.Session = nil
+	sess           *session.Session = nil
 )
+
+func Session(s *session.Session) {
+	if s == nil {
+		sess = session.Must(session.NewSessionWithOptions(session.Options{
+			Config: aws.Config{
+				Region: aws.String(os.Getenv("AWS_REGION")),
+			},
+		}))
+	} else {
+		sess = s
+	}
+}
 
 func GetParameterStoreValue(param string) (*ssm.GetParameterOutput, error) {
 	if val, ok := os.LookupEnv("USE_SSM_CACHE"); ok {
@@ -50,15 +62,11 @@ func GetParameterStoreValue(param string) (*ssm.GetParameterOutput, error) {
 		}
 	}
 
-	if Sess == nil {
-		Sess = session.Must(session.NewSessionWithOptions(session.Options{
-			Config: aws.Config{
-				Region: aws.String(os.Getenv("AWS_REGION")),
-			},
-		}))
+	if sess == nil {
+		sess = Session(nil)
 	}
 
-	ssmService := ssm.New(Sess)
+	ssmService := ssm.New(sess)
 
 	paramOutput, err := ssmService.GetParameter(&ssm.GetParameterInput{
 		Name: aws.String(param),
