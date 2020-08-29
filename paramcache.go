@@ -28,16 +28,16 @@ var (
 	sess           *session.Session = nil
 )
 
-func Session(s *session.Session) {
+func Session(s *session.Session) *session.Session {
 	if s == nil {
-		sess = session.Must(session.NewSessionWithOptions(session.Options{
+		sessionNew := session.Must(session.NewSessionWithOptions(session.Options{
 			Config: aws.Config{
 				Region: aws.String(os.Getenv("AWS_REGION")),
 			},
 		}))
-	} else {
-		sess = s
+		return sessionNew
 	}
+	return s
 }
 
 func GetParameterStoreValue(param string) (*ssm.GetParameterOutput, error) {
