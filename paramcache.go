@@ -24,7 +24,7 @@ const (
 
 var (
 	//override via environment var SSM_CACHE_ENABLED
-	ssmCacheEnabled string = "true"
+	cacheEnabled string = "true"
 
 	//override via environment var SSM_CACHE_TIMEOUT
 	cacheTimeout int64 = cacheDefaultTimeout
@@ -60,7 +60,7 @@ func AWSSession(s *session.Session) *session.Session {
 func setup() {
 	//get environment vars
 	if val, ok := os.LookupEnv("SSM_CACHE_ENABLED"); ok {
-		ssmCacheEnabled = val
+		cacheEnabled = val
 	}
 
 	if val, ok := os.LookupEnv("SSM_VERBOSE"); ok {
@@ -87,7 +87,7 @@ func GetParameterStoreValue(param string, paramType string) (*ssm.GetParameterOu
 	setup()
 
 	//return value if already cached
-	if ssmCacheEnabled == "true" || ssmCacheEnabled == "TRUE" {
+	if cacheEnabled == "true" || cacheEnabled == "TRUE" {
 		if parameter, ok := parameterStore[param]; ok {
 			if time.Now().Unix() < parameter.CacheExpires {
 				if verbose == "true" || verbose == "TRUE" {
@@ -115,7 +115,7 @@ func GetParameterStoreValue(param string, paramType string) (*ssm.GetParameterOu
 	}
 
 	//store value in cache
-	if ssmCacheEnabled == "true" || ssmCacheEnabled == "TRUE" {
+	if cacheEnabled == "true" || cacheEnabled == "TRUE" {
 		if verbose == "true" || verbose == "TRUE" {
 			log.Printf("SSM ParamCache: %s - not from cache, caching for %v seconds", param, cacheTimeout)
 		}
