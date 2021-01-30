@@ -22,5 +22,5 @@ tableName, err := paramcache.GetParameterStoreValue("dynamodb_table_name")
 if err != nil {
 	//handle error
 }
-log.Print("%s\n", *tableName.Parameter.Value)
+log.Printf("%s\n", *tableName.Parameter.Value)
 ```

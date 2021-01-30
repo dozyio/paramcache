@@ -83,7 +83,7 @@ func setup() {
 }
 
 //GetParameterStoreValue returns a string, stringlist or securestring from SSM and caches the value if configured to do so.
-func GetParameterStoreValue(param string, paramType string) (*ssm.GetParameterOutput, error) {
+func GetParameterStoreValue(param string) (*ssm.GetParameterOutput, error) {
 	setup()
 
 	//return value if already cached
