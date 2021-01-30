@@ -1,3 +1,7 @@
+## v0.2.0 (January 30 2021)
+* Added optional timeout to GetParameterStoreValue
+* Additional unit tests
+
 ## v0.1.9 (January 30 2021)
 * Docs update for pkg.go.dev
 

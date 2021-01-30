@@ -91,12 +91,24 @@ func setup() {
 
 }
 
+func getTimeout(timeouts ...int) int64 {
+	timeout := cacheTimeout
+	if len(timeouts) > 0 {
+		timeout = int64(timeouts[0])
+	}
+	return timeout
+}
+
 //GetParameterStoreValue returns a string, stringlist or securestring from SSM and caches the value if configured to do so.
-func GetParameterStoreValue(param string) (*ssm.GetParameterOutput, error) {
+//timeout is defined as variadic but only the first value is used.
+//If timeout isn't set, then fallback to SSM_CACHE_TIMEOUT variable or cacheDefaultTimeout (300)
+func GetParameterStoreValue(param string, timeout ...int) (*ssm.GetParameterOutput, error) {
 	setup()
 
+	timeoutVal := getTimeout(timeout...)
+
 	//return value if already cached
-	if cacheEnabled == "true" || cacheEnabled == "TRUE" {
+	if (cacheEnabled == "true" || cacheEnabled == "TRUE") && timeoutVal != 0 {
 		if parameter, ok := parameterStore[param]; ok {
 			if time.Now().Unix() < parameter.CacheExpires {
 				if verbose == "true" || verbose == "TRUE" {
@@ -124,9 +136,9 @@ func GetParameterStoreValue(param string) (*ssm.GetParameterOutput, error) {
 	}
 
 	//store value in cache
-	if cacheEnabled == "true" || cacheEnabled == "TRUE" {
+	if (cacheEnabled == "true" || cacheEnabled == "TRUE") && timeoutVal != 0 {
 		if verbose == "true" || verbose == "TRUE" {
-			log.Printf("SSM ParamCache: %s - not from cache, caching for %v seconds", param, cacheTimeout)
+			log.Printf("SSM ParamCache: %s - not from cache, caching for %v seconds", param, timeoutVal)
 		}
 
 		t := time.Now()

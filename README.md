@@ -24,3 +24,15 @@ if err != nil {
 }
 log.Printf("%s\n", *tableName.Parameter.Value)
 ```
+
+# Example: Cache timeout per parameter
+It is possible to set a cache timeout value per parameter. The example below sets a 20 second cache for "dynamodb_table_name". 
+```go
+tableName, err := paramcache.GetParameterStoreValue("dynamodb_table_name", 20)
+```
+
+# Example: Don't cache a parameter
+Setting a cache timeout of 0 will not add the parameter to the cache
+```go
+tableName, err := paramcache.GetParameterStoreValue("dynamodb_table_name", 0)
+```
