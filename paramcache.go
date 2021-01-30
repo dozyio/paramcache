@@ -19,25 +19,27 @@ type SSMParameterStoreCache struct {
 }
 
 const (
+	//cacheDefaultTimeout 300 seconds
 	cacheDefaultTimeout int64 = 300
 )
 
 var (
-	//override via environment var SSM_CACHE_ENABLED
+	//cacheEnabled override via environment var SSM_CACHE_ENABLED. Default TRUE
 	cacheEnabled string = "TRUE"
 
-	//override via environment var SSM_CACHE_TIMEOUT
+	//cacheTimeout override via environment var SSM_CACHE_TIMEOUT. Default 300
 	cacheTimeout int64 = cacheDefaultTimeout
 
-	//override via environment var SSM_VERBOSE
+	//verbose override via environment var SSM_VERBOSE. Default FALSE
 	verbose string = "FALSE"
 
+	//awsRegion is set via lambda enironment variable AWS_REGION
 	awsRegion string = ""
 
-	//the cache store
+	//parameterStore is the cache store
 	parameterStore = make(map[string]SSMParameterStoreCache)
 
-	//shared session
+	//sess is the shared session
 	sess *session.Session = nil
 )
 

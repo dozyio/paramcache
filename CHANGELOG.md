@@ -1,3 +1,6 @@
+## v0.1.9 (January 30 2021)
+* Docs update for pkg.go.dev
+
 ## v0.1.8 (January 30 2021)
 * Added unit testing
 * use TRUE/FALSE for defaults
