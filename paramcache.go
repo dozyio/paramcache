@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ssm"
 )
@@ -22,13 +23,24 @@ const (
 )
 
 var (
-	useSSMCache    string           = "true" //override via environment var USE_SSM_CACHE
-	parameterStore                  = make(map[string]SSMParameterStoreCache)
-	cacheTimeout   int64            = cacheDefaultTimeout //override via environment var SSM_CACHE_TIMEOUT
-	sess           *session.Session = nil
+	//override via environment var SSM_CACHE_ENABLED
+	ssmCacheEnabled string = "true"
+
+	//override via environment var SSM_CACHE_TIMEOUT
+	cacheTimeout int64 = cacheDefaultTimeout
+
+	//override via environment var SSM_VERBOSE
+	verbose string = "false"
+
+	//the cache store
+	parameterStore = make(map[string]SSMParameterStoreCache)
+
+	//shared session
+	sess *session.Session = nil
 )
 
-func Session(s *session.Session) *session.Session {
+//AWSSession create AWS Session for reuse
+func AWSSession(s *session.Session) *session.Session {
 	if s == nil {
 		sessionNew := session.Must(session.NewSessionWithOptions(session.Options{
 			Config: aws.Config{
@@ -40,9 +52,19 @@ func Session(s *session.Session) *session.Session {
 	return s
 }
 
-func GetParameterStoreValue(param string) (*ssm.GetParameterOutput, error) {
-	if val, ok := os.LookupEnv("USE_SSM_CACHE"); ok {
-		useSSMCache = val
+//Setup configures paramcache via environment variables
+//Configurable variables are as follows
+//SSM_CACHE_ENABLED (default: true)
+//SSM_VERBOSE (default: false)
+//SSM_CACHE_TIMEOUT (default: true)
+func setup() {
+	//get environment vars
+	if val, ok := os.LookupEnv("SSM_CACHE_ENABLED"); ok {
+		ssmCacheEnabled = val
+	}
+
+	if val, ok := os.LookupEnv("SSM_VERBOSE"); ok {
+		verbose = val
 	}
 
 	if val, ok := os.LookupEnv("SSM_CACHE_TIMEOUT"); ok {
@@ -53,30 +75,51 @@ func GetParameterStoreValue(param string) (*ssm.GetParameterOutput, error) {
 		}
 	}
 
-	if useSSMCache == "true" || useSSMCache == "TRUE" {
+	//create aws session
+	if sess == nil {
+		sess = AWSSession(nil)
+	}
+
+}
+
+//GetParameterStoreValue returns a string, stringlist or securestring from SSM and caches the value if configured to do so.
+func GetParameterStoreValue(param string, paramType string) (*ssm.GetParameterOutput, error) {
+	setup()
+
+	//return value if already cached
+	if ssmCacheEnabled == "true" || ssmCacheEnabled == "TRUE" {
 		if parameter, ok := parameterStore[param]; ok {
 			if time.Now().Unix() < parameter.CacheExpires {
-				log.Printf("SSM Param: %s - from cache\n", param)
+				if verbose == "true" || verbose == "TRUE" {
+					log.Printf("SSM ParamCache: %s - from cache", param)
+				}
 				return parameter.Value, nil
 			}
 		}
 	}
 
-	if sess == nil {
-		sess = Session(nil)
-	}
-
 	ssmService := ssm.New(sess)
 
 	paramOutput, err := ssmService.GetParameter(&ssm.GetParameterInput{
-		Name: aws.String(param),
+		Name:           aws.String(param),
+		WithDecryption: aws.Bool(true),
 	})
+
 	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			log.Printf("Error: SSM ParamCache: %v", aerr.Error())
+		} else {
+			log.Printf("Error: SSM ParamCache: %v", err)
+		}
 		return nil, err
 	}
 
-	if useSSMCache == "true" || useSSMCache == "TRUE" {
-		log.Printf("SSM Param: %s - not from cache\n", param)
+	//store value in cache
+	if ssmCacheEnabled == "true" || ssmCacheEnabled == "TRUE" {
+		if verbose == "true" || verbose == "TRUE" {
+			log.Printf("SSM ParamCache: %s - not from cache, caching for %v seconds", param, cacheTimeout)
+		}
+
 		t := time.Now()
 		cacheExpires := t.Unix() + cacheTimeout
 		p := &SSMParameterStoreCache{
@@ -85,5 +128,6 @@ func GetParameterStoreValue(param string) (*ssm.GetParameterOutput, error) {
 		}
 		parameterStore[param] = *p
 	}
+
 	return paramOutput, nil
 }
