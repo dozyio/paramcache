@@ -1,3 +1,7 @@
+## v0.1.8 (January 30 2021)
+* Added unit testing
+* use TRUE/FALSE for defaults
+
 ## v0.1.7 (January 30 2021)
 * Fixed broken release (again)
 

@@ -24,13 +24,15 @@ const (
 
 var (
 	//override via environment var SSM_CACHE_ENABLED
-	cacheEnabled string = "true"
+	cacheEnabled string = "TRUE"
 
 	//override via environment var SSM_CACHE_TIMEOUT
 	cacheTimeout int64 = cacheDefaultTimeout
 
 	//override via environment var SSM_VERBOSE
-	verbose string = "false"
+	verbose string = "FALSE"
+
+	awsRegion string = ""
 
 	//the cache store
 	parameterStore = make(map[string]SSMParameterStoreCache)
@@ -44,7 +46,7 @@ func AWSSession(s *session.Session) *session.Session {
 	if s == nil {
 		sessionNew := session.Must(session.NewSessionWithOptions(session.Options{
 			Config: aws.Config{
-				Region: aws.String(os.Getenv("AWS_REGION")),
+				Region: aws.String(awsRegion),
 			},
 		}))
 		return sessionNew
@@ -54,9 +56,10 @@ func AWSSession(s *session.Session) *session.Session {
 
 //Setup configures paramcache via environment variables
 //Configurable variables are as follows
-//SSM_CACHE_ENABLED (default: true)
-//SSM_VERBOSE (default: false)
-//SSM_CACHE_TIMEOUT (default: true)
+//SSM_CACHE_ENABLED (default: TRUE)
+//SSM_VERBOSE (default: FALSE)
+//SSM_CACHE_TIMEOUT (default: TRUE)
+//AWS_REGION is set by lambda and not configurable
 func setup() {
 	//get environment vars
 	if val, ok := os.LookupEnv("SSM_CACHE_ENABLED"); ok {
@@ -73,6 +76,10 @@ func setup() {
 				cacheTimeout = timeout
 			}
 		}
+	}
+
+	if val, ok := os.LookupEnv("AWS_REGION"); ok {
+		awsRegion = val
 	}
 
 	//create aws session
